@@ -1,0 +1,39 @@
+# Archivos generados y entornos locales (no subir a Git)
+
+# macOS / editores
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# CMake / build
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+install_manifest.txt
+
+# Datos generados por scripts/notebook
+data/input/*_data.csv
+data/output/*.csv
+data/output/*.png
+
+# Mantener archivos marcadores vacíos
+!data/**/.gitkeep
+!results/**/.gitkeep
+
+# Resultados (opcional dejar rastreados si se desea publicar)
+# Descomenta si NO quieres subirlos
+# results/times.csv
+# results/speedup_summary.csv
+# results/plots/*.png
