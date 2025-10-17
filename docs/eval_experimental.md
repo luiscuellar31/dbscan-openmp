@@ -32,8 +32,19 @@ Parámetros del algoritmo (fijos durante el experimento):
 
 ## Procedimiento
 
-1) Generar datasets: `scripts/DBSCAN_noise.ipynb` o `bash scripts/run_all.sh` (crea `data/input/{N}_data.csv`).
-   - Opcional: limitar tamaños con argumentos. Ejemplo: `bash scripts/run_all.sh 20000 40000 80000 120000`.
+Opción A — Todo en uno (recomendado para reproducir):
+
+```
+bash scripts/run_all.sh
+# o con tamaños específicos
+bash scripts/run_all.sh 20000 40000 80000 120000
+```
+
+Esto ejecuta automáticamente: generación de datasets (data/input/{N}_data.csv), compilación (Release), benchmark (10 repeticiones; guarda `results/times.csv`) y gráficas de speedup en `results/plots/`, además de `results/speedup_summary.csv`.
+
+Opción B — Paso a paso:
+
+1) Generar datasets: abre `scripts/DBSCAN_noise.ipynb` y ejecuta la celda inicial (crea `data/input/{N}_data.csv`).
 2) Compilar: `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j`.
 3) Benchmark: `bash scripts/run_bench.sh` (10 repeticiones por combinación). Tiempos en `results/times.csv`.
 4) Speedup: `python3 scripts/plot_speedup.py` produce `results/plots/speedup_N*.png` y `results/speedup_summary.csv`.
