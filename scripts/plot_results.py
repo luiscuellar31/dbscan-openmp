@@ -124,8 +124,19 @@ def resolver_ruta_csv(arg_path: str | None) -> str:
     raise FileNotFoundError(f"Ruta no válida: {arg_path}")
 
 
+def _parse_cli():
+    no_show = False
+    arg = None
+    for a in sys.argv[1:]:
+        if a == "--no-show":
+            no_show = True
+        else:
+            arg = a
+    return arg, no_show
+
+
 def main():
-    arg = sys.argv[1] if len(sys.argv) > 1 else None
+    arg, no_show = _parse_cli()
     ruta = resolver_ruta_csv(arg)
 
     df = pd.read_csv(ruta)
@@ -139,7 +150,9 @@ def main():
     # Guardar PNG junto al CSV de entrada
     out_png = os.path.join(os.path.dirname(ruta), f"{base}.png")
     plt.savefig(out_png, dpi=200)
-    plt.show()
+    # Mostrar solo en modo interactivo
+    if not no_show and os.environ.get("NO_SHOW", "0") != "1":
+        plt.show()
     print("PNG guardado en:", out_png)
 
 

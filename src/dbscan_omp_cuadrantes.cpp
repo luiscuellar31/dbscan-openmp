@@ -55,11 +55,13 @@ vector<int> dbscan(vector<Point> &puntos, double eps, int minimoPuntos) {
     int n = static_cast<int>(puntos.size());
     vector<int> clusterPertenezco(n, -1);
     vector<vector<int>> vecinosLista(n, vector<int>());
-    vector<int> esCore(n, 0);
     int clusterID = 0;
 
-    // Precalcular vecinos y marcar si es core; paralelizar por bloques estáticos ("cuadrantes")
-    #pragma omp parallel for schedule(static)
+    // Precalcular vecinos y marcar si es core; paralelizar por bloques contiguos ("cuadrantes")
+    vector<int> esCore(n, 0);
+    int chunk = (n + 3) / 4; // ceil(n/4)
+    if (chunk < 1) chunk = 1;
+    #pragma omp parallel for schedule(static, chunk)
     for (int i = 0; i < n; i++) {
         vecinosLista[i] = vecinosObj(puntos, i, eps);
         if (static_cast<int>(vecinosLista[i].size()) + 1 >= minimoPuntos) {
@@ -164,7 +166,7 @@ int main(int argc, char** argv) {
     }
 
     // Ejecutar DBSCAN con parámetros elegidos
-    auto etiquetas = dbscan(puntos, 0.05, 10);
+    auto etiquetas = dbscan(puntos, 0.03, 10);
 
     // Imprimir por consola igual que antes
     cout << "LUIS\n";

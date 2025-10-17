@@ -59,7 +59,7 @@ vector<int> dbscan(vector<Point> &puntos, double eps, int minimoPuntos) {
 
     // Precalculo los vecinos y si es core o no (paralelizado en i)
     vector<int> esCore(n, 0);
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(dynamic)
     for(int i = 0; i < n; i++) {
         vecinosLista[i] = vecinosObj(puntos, i, eps);
         if(vecinosLista[i].size() + 1 >= minimoPuntos) {
@@ -69,7 +69,6 @@ vector<int> dbscan(vector<Point> &puntos, double eps, int minimoPuntos) {
 
     for (int i = 0; i < n; i++) {
         if (clusterPertenezco[i] == -1) {
-
             if (!esCore[i]) {
                 clusterPertenezco[i] = -2; // ruido
             } else {
@@ -165,7 +164,7 @@ int main(int argc, char** argv) {
     }
 
     // Ejecutar DBSCAN con parámetros elegidos
-    auto etiquetas = dbscan(puntos, 0.05, 10);
+    auto etiquetas = dbscan(puntos, 0.03, 10);
 
     // Imprimir por consola igual que antes
     cout << "LUIS\n";

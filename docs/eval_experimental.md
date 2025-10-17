@@ -48,21 +48,23 @@ Notas de medición:
 Si necesitas procesar un único CSV externo que no sigue el patrón `{N}_data.csv`, puedes usar el flujo rápido:
 
 ```
-bash scripts/run_custom.sh data/input/extra/custom.csv 8
-# o sin argumentos (toma el CSV más reciente en data/input/extra y detecta hilos)
+bash scripts/run_custom.sh data/input/extra/custom.csv
+# o sin argumentos (toma el CSV más reciente en data/input/extra)
 bash scripts/run_custom.sh
 ```
 
-Esto compila en Release (si hace falta), ejecuta `dbscan_serial`, `dbscan_omp_indivisible` y `dbscan_omp_cuadrantes` sobre ese CSV y genera:
-- `data/output/<base>_{serial|indivisible|cuadrantes}_results.csv`
-- PNGs correspondientes para visualización
+Esto compila en Release (si hace falta), ejecuta mediciones de `dbscan_serial`, `dbscan_omp_indivisible` y `dbscan_omp_cuadrantes` sobre ese CSV
+para hilos {1, 2, 4, 8, 16}, y genera:
+- `results/custom_times.csv` (crudo de esta corrida)
+- `results/custom_speedup_summary.csv` (promedios y speedups)
+- `results/plots/extra/speedup_N<...>.png` (único gráfico de speedup basado solo en ese CSV)
 
 ## Estrategias de paralelización (resumen)
 
-- `dbscan_omp_indivisible`: paraleliza el bucle externo que precalcula `vecinosLista[i]` y `esCore[i]` con `#pragma omp parallel for schedule(static)`. La búsqueda de vecinos de cada `i` es secuencial (evita paralelismo anidado y locks). La expansión BFS permanece secuencial.
-- `dbscan_omp_cuadrantes`: mismo patrón con `schedule(static)` pensado para 4 hilos (bloques contiguos → “cuadrantes” lógicos). También mantiene BFS secuencial.
+- `dbscan_omp_indivisible`: paraleliza el bucle externo que precalcula `vecinosLista[i]` y `esCore[i]` con `#pragma omp parallel for schedule(dynamic)`. La búsqueda de vecinos de cada `i` es secuencial (evita paralelismo anidado y locks). La expansión BFS permanece secuencial.
+- `dbscan_omp_cuadrantes`: mismo patrón con `schedule(static, ceil(N/4))` (4 bloques contiguos → “cuadrantes” lógicos). También mantiene BFS secuencial.
 
-Consecuencia: ambas variantes reparten el coste dominante O(N²) de búsqueda de vecinos; la diferencia práctica proviene del reparto de iteraciones (estático) y la localidad.
+Consecuencia: ambas variantes reparten el coste dominante O(N²) de búsqueda de vecinos; la diferencia práctica proviene del reparto de iteraciones (dynamic vs bloques estáticos) y la localidad de memoria.
 
 ## Resultados y análisis
 
@@ -76,10 +78,8 @@ Interpretación esperada en M2 (8 hilos lógicos, sin SMT):
 - `2V` (16 hilos) implica sobre-suscripción en Apple Silicon (no hay SMT); es común ver estancamiento o degradación vs `V`.
 
 Comparativa entre variantes:
-- `omp_indivisible` vs `omp_cuadrantes`: al compartir el mismo esquema (pre-cálculo paralelo + BFS secuencial) y `schedule(static)`, ambas tienden a rendir de forma muy similar. Diferencias pequeñas pueden deberse a:
-  - Localidad: reparto en bloques contiguos puede ayudar a la caché de forma marginal para ciertos `N`.
-  - Balanceo: `schedule(static)` asegura balance uniforme cuando el trabajo por `i` es homogéneo; si hay variación, `dynamic` podría ayudar, pero introduce overhead.
-- Conclusión típica: ninguna es consistentemente superior; `indivisible` suele ser una línea base sólida y `cuadrantes` no la supera de forma sistemática con esta implementación y dataset.
+- `omp_indivisible` vs `omp_cuadrantes`: comparten el mismo esquema (pre-cálculo paralelo + BFS secuencial), pero difieren en scheduling: `dynamic` (balance) vs `static` por bloques (localidad). Las diferencias suelen ser pequeñas y dependen del patrón de datos y del número de hilos.
+- Conclusión típica: ninguna es consistentemente superior; `indivisible` es robusta cuando el trabajo por `i` varía, mientras que `cuadrantes` puede favorecer la caché al trabajar por bloques grandes.
 
 Limitaciones y mejoras:
 - BFS secuencial limita el speedup total; un rediseño (fusión de clústeres con DSU/union-find o “expand frontiers” paralelo) podría mejorar, con cuidado de las dependencias.

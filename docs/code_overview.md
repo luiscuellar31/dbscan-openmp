@@ -5,8 +5,8 @@ El proyecto implementa un DBSCAN O(N²) sencillo sobre datos 2D, usando distanci
 Se incluyen tres ejecutables:
 
 1. `dbscan_serial` — implementación serial de referencia.
-2. `dbscan_omp_indivisible` — paralelización sobre el índice externo (pre-cálculo de vecinos y máscara de núcleos).
-3. `dbscan_omp_cuadrantes` — mismo esquema que la anterior pero usando `schedule(static)` pensado para 4 hilos (cuadrantes lógicos).
+2. `dbscan_omp_indivisible` — paraleliza el índice externo con `schedule(dynamic)` (balanceo por demanda) para el pre-cálculo de vecinos y máscara de núcleos.
+3. `dbscan_omp_cuadrantes` — mismo esquema con `schedule(static, ceil(N/4))` para repartir en 4 bloques contiguos ("cuadrantes").
 
 ## Algoritmo base (serial)
 
@@ -21,8 +21,8 @@ Se incluyen tres ejecutables:
 
 ## Paralelización OpenMP
 
-- `omp_indivisible`: `#pragma omp parallel for schedule(static)` sobre el bucle exterior que precalcula `vecinosLista[i]` y `esCore[i]`. La búsqueda de vecinos por punto es secuencial para cada `i` (evita paralelismo anidado y locks). Es una línea base clara y portable.
-- `omp_cuadrantes`: mismo patrón con `schedule(static)` y recomendación de `OMP_NUM_THREADS=4` para emular “cuadrantes” lógicos (bloques contiguos de índices). En la práctica, con `V` hilos modernos, su rendimiento es similar a `indivisible`.
+- `omp_indivisible`: `#pragma omp parallel for schedule(dynamic)` sobre el bucle exterior que precalcula `vecinosLista[i]` y `esCore[i]`. La búsqueda de vecinos por punto es secuencial para cada `i` (evita paralelismo anidado y locks). Mejora el balance cuando el coste por `i` varía.
+- `omp_cuadrantes`: mismo patrón con `schedule(static, ceil(N/4))` (4 bloques contiguos → “cuadrantes” lógicos). Fomenta localidad por bloques grandes.
 - La expansión BFS permanece secuencial en ambas (evita carreras en `clusterPertenezco` y la cola), por lo que el speedup viene principalmente del pre-cálculo de vecinos.
 
 ### Tabla comparativa (estrategias)
@@ -30,8 +30,8 @@ Se incluyen tres ejecutables:
 | Variante              | Paralelismo principal                         | Scheduling         | Escrituras compartidas | Pros                                                     | Contras                                     |
 |-----------------------|-----------------------------------------------|--------------------|-------------------------|----------------------------------------------------------|---------------------------------------------|
 | Serial                | Ninguno                                       | —                  | No                      | Referencia simple y determinista                         | O(N²) sin paralelismo                       |
-| OMP indivisible       | `for i in [0..N)` (vecinosLista + esCore)     | `static`           | No (cada `i` es propio) | Fácil, buen balance si costo por `i` es similar          | BFS secuencial limita speedup global        |
-| OMP por cuadrantes    | Igual que indivisible (bloques contiguos)     | `static` (bloques) | No (cada `i` es propio) | Mejor localidad al repartir por bloques contiguos (4 “Q”)| Beneficio depende del patrón de datos       |
+| OMP indivisible       | `for i in [0..N)` (vecinosLista + esCore)     | `dynamic`          | No (cada `i` es propio) | Balancea cuando el coste por `i` varía                    | Overhead del scheduler; BFS secuencial      |
+| OMP por cuadrantes    | Igual que indivisible (bloques contiguos)     | `static` (ceil N/4)| No (cada `i` es propio) | Localidad por bloques contiguos (4 “Q”)                   | Si el coste varía, puede desbalancearse     |
 
 
 ## Organización del repositorio

@@ -65,13 +65,14 @@ Genera `data/output/4000_results.png` coloreando clusters y ruido (-2) en gris.
 Coloca el archivo CSV en `data/input/extra/` (por ejemplo, `data/input/extra/custom.csv`) o pásalo por argumento, y corre:
 
 ```
-bash scripts/run_custom.sh data/input/extra/custom.csv 8
-# o sin argumentos (toma el CSV más reciente en data/input/extra y detecta hilos)
+bash scripts/run_custom.sh data/input/extra/custom.csv
+# o sin argumentos (toma el CSV más reciente en data/input/extra)
 bash scripts/run_custom.sh
 ```
 
-El script compila, ejecuta `dbscan_serial`, `dbscan_omp_indivisible` y `dbscan_omp_cuadrantes` sobre ese CSV, 
-genera `data/output/<base>_{serial|indivisible|cuadrantes}_results.csv` y sus PNGs correspondientes.
+El script compila y ejecuta mediciones para `dbscan_serial`, `dbscan_omp_indivisible` y `dbscan_omp_cuadrantes` sobre ese CSV,
+registra tiempos en `results/custom_times.csv` y genera un único gráfico de speedup en `results/plots/extra/speedup_N<...>.png`
+usando hilos {1, 2, 4, 8, 16}. También guarda `results/custom_speedup_summary.csv` con los promedios y speedups.
 
 ## Benchmark y speedup
 
@@ -92,6 +93,11 @@ Salidas:
 - `results/times.csv` (crudo)
 - `results/speedup_summary.csv` (promedios + speedups)
 - `results/plots/speedup_N*.png` (incluye línea verde Serial = 1.0)
+
+### Variantes OMP y scheduling
+
+- `dbscan_omp_indivisible`: usa `#pragma omp parallel for schedule(dynamic)` para balancear la carga cuando el coste por punto varía.
+- `dbscan_omp_cuadrantes`: usa `#pragma omp parallel for schedule(static, ceil(N/4))` para repartir el trabajo en 4 bloques contiguos (“cuadrantes”), favoreciendo localidad.
 
 ## Estructura del repositorio
 

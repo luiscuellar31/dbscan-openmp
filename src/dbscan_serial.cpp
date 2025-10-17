@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
     }
 
     // Ejecutar DBSCAN con parámetros elegidos
-    auto etiquetas = dbscan(puntos, 0.05, 10);
+    auto etiquetas = dbscan(puntos, 0.03, 10);
 
     // Imprimir por consola igual que antes
     cout << "LUIS\n";

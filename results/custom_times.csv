@@ -1,0 +1,12 @@
+mode,N,threads,run,seconds
+serial,110005,1,1,16.227781
+omp_indivisible,110005,1,1,16.528351
+omp_indivisible,110005,2,1,8.869286
+omp_indivisible,110005,4,1,5.557080
+omp_indivisible,110005,8,1,4.637103
+omp_indivisible,110005,16,1,4.571209
+omp_cuadrantes,110005,1,1,16.302063
+omp_cuadrantes,110005,2,1,8.900469
+omp_cuadrantes,110005,4,1,5.515804
+omp_cuadrantes,110005,8,1,5.791406
+omp_cuadrantes,110005,16,1,5.629156
